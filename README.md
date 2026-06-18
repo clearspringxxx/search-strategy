@@ -1,168 +1,157 @@
-# 🔍 联网搜索 MCP 策略
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+  <img src="https://img.shields.io/badge/platform-Claude%20Code-orange.svg" alt="Platform">
+  <img src="https://img.shields.io/badge/MCP-4%20servers-brightgreen.svg" alt="MCP Servers">
+</p>
 
-> 一套经过实战验证的 Claude Code 联网搜索工具组合策略，让 AI 在不同场景下选择最合适的搜索工具。
+# 🔍 Web Search MCP Strategy
 
-## 为什么需要这个？
+> A Claude Code MCP search toolchain strategy — routes every query to the right engine automatically.
 
-Claude Code 内置的 WebSearch 和 WebFetch 能力有限（中文差、SPA 站抓不到），而社区有多个优秀的 MCP 搜索工具各有所长。本策略帮你**组合使用**这些工具，覆盖中英文搜索、技术文档、SPA 网站等各种场景。
+English | [简体中文](README_ZH.md)
 
-## 工具清单
+## Table of Contents
 
-| 工具 | 类型 | 项目地址 | 一句话介绍 |
-|------|------|----------|-----------|
-| **tavily** | MCP 服务 | [tavily.com](https://www.tavily.com/) | AI 搜索引擎，服务端抓取，自动整理结果 |
-| **web-search** | MCP 服务 | [npm: open-websearch](https://www.npmjs.com/package/open-websearch) | 多引擎聚合（百度/Bing/Google/DuckDuckGo/CSDN/掘金等） |
-| **context7** | MCP 服务 | [GitHub: upstash/context7](https://github.com/upstash/context7) | 主流库技术文档精准查询 |
-| **chrome-devtools** | MCP 服务 | [npm: chrome-devtools-mcp](https://www.npmjs.com/package/chrome-devtools-mcp) | 浏览器自动化，SPA 网站终极方案 |
+- [Why?](#why)
+- [Tools](#tools)
+- [Strategy Overview](#strategy-overview)
+- [Tool Details](#tool-details)
+- [Comparison](#comparison)
+- [Installation](#installation)
+- [Usage Tips](#usage-tips)
+- [Other AI Tools](#works-with-other-ai-tools)
+- [License](#license)
 
-## 策略总览
+## Why?
+
+Claude Code's built-in `WebSearch` / `WebFetch` are weak at Chinese content and can't render SPA sites. The MCP ecosystem has excellent search tools — this strategy **composes them** so you always get the best result.
+
+## Tools
+
+| Tool | Type | Link | Summary |
+|------|------|------|---------|
+| **tavily** | MCP Service | [tavily.com](https://www.tavily.com/) | AI search engine — server-side crawling with auto-summarized results |
+| **web-search** | MCP Service | [npm: open-websearch](https://www.npmjs.com/package/open-websearch) | Multi-engine aggregator (Baidu / Bing / Google / DuckDuckGo / CSDN / Juejin) |
+| **context7** | MCP Service | [GitHub: upstash/context7](https://github.com/upstash/context7) | Precise technical doc lookup with code examples |
+| **chrome-devtools** | MCP Service | [npm: chrome-devtools-mcp](https://www.npmjs.com/package/chrome-devtools-mcp) | Browser automation — the ultimate SPA scraper |
+
+## Strategy Overview
 
 ```
-用户提问
-  ├── "xxx 怎么用 / API 是什么 / 配置怎么写" → context7
-  ├── "搜一下 xxx"（中文）→ web-search + 百度
-  ├── "搜索 xxx"（英文）→ tavily
-  ├── "抓取这个网页" → 先判断是否 SPA
-  │     ├── 非 SPA → tavily_extract（国外站）/ web-search fetchWebContent（国内站）
-  │     └── SPA → chrome-devtools 浏览器渲染
-  ├── "研究一下 xxx 话题" → tavily_research
-  └── 以上都挂了 → 内置 WebSearch（兜底）
+User query
+  ├── "How do I use X / what's the API" → context7
+  ├── "Search X" (Chinese)               → web-search + Baidu
+  ├── "Search X" (English)               → tavily
+  ├── "Fetch this page"                  → check if SPA
+  │   ├── Not SPA → tavily_extract / web-search fetchWebContent
+  │   └── SPA     → chrome-devtools browser rendering
+  ├── "Research X"                       → tavily_research
+  └── All above failed                   → built-in WebSearch (fallback)
 ```
 
-## 各工具详解
+## Tool Details
 
-### 1. 中文搜索 → web-search + 百度
+### 1. Chinese Search → web-search + Baidu
 
-**最佳场景**：中文通用搜索、国内技术文章
+- Baidu is the most reliable for Chinese content
+- For tech articles: `engines: ["csdn"]` or `engines: ["juejin"]`
+- Multi-source: `engines: ["baidu", "bing"]`
+- ⚠️ You must set `engines` explicitly — default is Bing only
 
-- 百度最稳，国内直连无障碍
-- 搜技术文章可指定 `engines: ["csdn"]` 或 `engines: ["juejin"]`
-- 需要多源覆盖时 `engines: ["baidu", "bing"]`
+### 2. English Search → tavily
 
-**注意**：必须显式指定 `engines`，默认只用 Bing。
+- Server-side crawling — no direct international access needed
+- AI auto-summarizes results
+- `tavily_research` for deep dives / `tavily_crawl` for bulk / `tavily_map` for sitemaps
 
-### 2. 英文搜索 → tavily
+### 3. Technical Docs → context7
 
-**最佳场景**：英文搜索、需要 AI 整理结果、批量抓取
+- Best for React / Next.js / Tailwind / Prisma and other mainstream libraries
+- Returns official docs + code examples, not search results
+- Version-aware; fall back to search engines for niche libraries
 
-- 服务端抓取，不需要直连国外站，国内环境反而更省心
-- AI 自动整理结果，省去筛选成本
-- 需要深度研究用 `tavily_research`
-- 需要批量抓取/站点地图用 `tavily_crawl` / `tavily_map`
+### 4. SPA Sites → chrome-devtools
 
-### 3. 查技术文档 → context7
+- Pure JS-rendered SPA sites return empty shells to fetch-based tools
+- Browser renders the real DOM → `take_snapshot` captures actual content
+- Telltale sign: fetch returns near-empty JSON or minimal text
 
-**最佳场景**：查 React / Next.js / Tailwind / Prisma 等主流库的用法
+### 5. Fallback → Built-in WebSearch / WebFetch
 
-- 比搜索引擎精准，返回官方文档 + 代码示例
-- 支持版本指定（如 Next.js v14 vs v15）
-- 小众库或未收录的库才退化到搜索引擎
+- Only when all other tools are unavailable
+- Never use as first choice
 
-### 4. SPA 网站 → chrome-devtools 浏览器
+## Comparison
 
-**最佳场景**：纯 JS 渲染的 SPA 网站（icourse163、大部分现代前端站）
+| Capability | Built-in | tavily | web-search | context7 |
+|------------|:-------:|:------:|:----------:|:--------:|
+| Chinese search | ❌ | ⚠️ | ✅ | ❌ |
+| English search | ⚠️ | ✅ | ✅ | ❌ |
+| Technical docs | ❌ | ⚠️ | ⚠️ | ✅ |
+| AI summarization | ❌ | ✅ | ❌ | ❌ |
+| SPA scraping | ❌ | ❌ | ❌ | ❌ |
+| API key required | ❌ | ✅ | ❌ | ❌ |
 
-- SPA 网站搜索引擎和抓取工具只能拿到空壳
-- 用浏览器渲染获取真实 DOM 内容
-- 特征：fetch 返回空 JSON 或极少内容
+## Installation
 
-### 5. 应急兜底 → 内置 WebSearch / WebFetch
+### Prerequisites
 
-- 仅在以上工具都不可用时使用
-- 不要作为首选
-
-## 工具对比
-
-| 能力 | 内置搜索 | tavily | web-search | context7 |
-|------|---------|--------|------------|----------|
-| 中文搜索 | ❌ 差 | ⚠️ 一般 | ✅ 支持百度 | ❌ |
-| 英文搜索 | ⚠️ 一般 | ✅ 好 | ✅ 多引擎 | ❌ |
-| 技术文档 | ❌ | ⚠️ | ⚠️ | ✅ 精准 |
-| AI 整理 | ❌ | ✅ | ❌ | ❌ |
-| SPA 抓取 | ❌ | ❌ | ❌ | ❌ |
-| 需要 API Key | ❌ | ✅ | ❌ | ❌ |
-
-## 安装指南
-
-### 前置要求
-
-- [Claude Code](https://claude.ai/code) 已安装
+- [Claude Code](https://claude.ai/code) installed
 - [Node.js](https://nodejs.org/) 18+
-- [Chrome 浏览器](https://www.google.com/chrome/)（chrome-devtools 需要）
+- [Chrome](https://www.google.com/chrome/) (for chrome-devtools)
 
-### 快速安装脚本（Windows）
-
-提供了一键安装脚本，交互式引导完成所有 MCP 服务的安装：
+### Quick Install (Recommended)
 
 ```powershell
-# 双击运行（推荐）
-setup.bat
-
-# 或在 PowerShell 中执行
+# Double-click setup.bat, or in PowerShell:
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-脚本功能：
-- 交互式输入 Tavily API Key（可跳过）
-- 自动检测 Node.js 和 Claude Code 是否已安装
-- 自动跳过已安装的 MCP 服务，支持重复运行
-- 自动安装策略文件到 `~/.claude/CLAUDE.md`，已有文件时支持跳过/追加/覆盖
-- 所有命令后台静默执行，无额外弹窗
+The script: prompts for Tavily key → checks dependencies → installs MCPs → deploys strategy → shows status summary.
 
-### 手动安装
+### Manual Install
 
 ```bash
-# tavily（需要 API Key，去 https://tavily.com 注册获取）
-claude mcp add --scope user tavily --transport http "https://mcp.tavily.com/mcp/?tavilyApiKey=YOUR_API_KEY"
+# tavily (API key required — sign up at https://tavily.com)
+claude mcp add --scope user tavily --transport http "https://mcp.tavily.com/mcp/?tavilyApiKey=YOUR_KEY"
 
-# web-search（免费，无需 API Key）
+# web-search (free)
 claude mcp add --scope user web-search -- cmd /c npx -y open-websearch@latest
 
-# context7（免费，无需 API Key）
+# context7 (free)
 claude mcp add --scope user context7 --transport http "https://mcp.context7.com/mcp"
 
-# chrome-devtools（需要 Chrome 浏览器）
+# chrome-devtools (requires Chrome)
 claude mcp add --scope user chrome-devtools -- cmd /c npx chrome-devtools-mcp@latest
 ```
 
-> 将 `YOUR_API_KEY` 替换为你的 Tavily API Key。其他工具免费无需注册。
-
-### 验证安装
+### Verify
 
 ```bash
 claude mcp list
 ```
 
-所有工具应该显示 `✔ Connected`。
-
-## 使用建议
-
-1. **日常搜索**：中文用 web-search + 百度，英文用 tavily
-2. **查技术文档**：优先 context7，比搜索引擎快且准
-3. **SPA 网站**：直接用 chrome-devtools，不要浪费时间尝试其他工具
-4. **深度研究**：用 tavily_research，它会自动从多个来源综合信息
-
-## 策略文件
-
-[strategy.md](strategy.md) 是 Claude Code 的策略配置文件，包含完整的搜索工具选择规则。将其复制到 `~/.claude/` 目录下并重命名为 `CLAUDE.md`，即可全局生效：
+### Deploy Strategy File
 
 ```bash
 # Windows
 copy strategy.md %USERPROFILE%\.claude\CLAUDE.md
 
-# Mac/Linux
+# Mac / Linux
 cp strategy.md ~/.claude/CLAUDE.md
 ```
 
-## 适配其他 AI 工具
+## Usage Tips
 
-本策略不仅适用于 Claude Code，也适用于任何支持 MCP 的 AI 编程工具：
+1. **Daily search**: Chinese → web-search + Baidu, English → tavily
+2. **Tech docs**: context7 first — faster and more accurate than search
+3. **SPA sites**: straight to chrome-devtools — don't waste time on other tools
+4. **Deep research**: tavily_research — multi-source synthesis automatically
 
-- [Cursor](https://cursor.sh/)
-- [Windsurf](https://codeium.com/windsurf)
-- [Cline](https://github.com/cline/cline)
-- [Continue](https://continue.dev/)
+## Works with Other AI Tools
 
-## 许可证
+This strategy works with any MCP-compatible AI coding tool: [Cursor](https://cursor.sh/) · [Windsurf](https://codeium.com/windsurf) · [Cline](https://github.com/cline/cline) · [Continue](https://continue.dev/)
 
-MIT
+## License
+
+[MIT](LICENSE)
