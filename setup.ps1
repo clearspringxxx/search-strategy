@@ -94,15 +94,32 @@ Write-Host ""
 Write-Host "[5/5] 安装策略文件..." -ForegroundColor Cyan
 Write-Host ""
 
+# 选择语言版本
+Write-Host "选择策略语言版本:" -ForegroundColor Yellow
+Write-Host "  [1] 简体中文 (strategy.md)" -ForegroundColor Cyan
+Write-Host "  [2] English   (strategy_en.md)" -ForegroundColor DarkCyan
+Write-Host ""
+$langChoice = Read-Host "请选择 (1/2，默认 1)"
+if ($langChoice -eq "2") {
+    $strategyName = "strategy_en.md"
+    $langLabel = "English"
+}
+else {
+    $strategyName = "strategy.md"
+    $langLabel = "简体中文"
+}
+Write-Host "已选择: $langLabel" -ForegroundColor Green
+Write-Host ""
+
 $claudeDir = "$env:USERPROFILE\.claude"
-$strategySrc = Join-Path $PSScriptRoot "strategy.md"
+$strategySrc = Join-Path $PSScriptRoot $strategyName
 $strategyDst = Join-Path $claudeDir "CLAUDE.md"
 
 $srcExists = Test-Path $strategySrc
 $dstExists = Test-Path $strategyDst
 
 if (-not $srcExists) {
-    Write-Host "未找到 strategy.md，跳过策略安装" -ForegroundColor Yellow
+    Write-Host "未找到 $strategyName，跳过策略安装" -ForegroundColor Yellow
 }
 elseif ($dstExists) {
     Write-Host "检测到已有策略文件: $strategyDst" -ForegroundColor Yellow
@@ -130,7 +147,7 @@ else {
         New-Item -ItemType Directory -Path $claudeDir -Force | Out-Null
     }
     Copy-Item $strategySrc $strategyDst
-    Write-Host "策略文件已安装到 $strategyDst" -ForegroundColor Green
+    Write-Host "策略文件 ($langLabel) 已安装到 $strategyDst" -ForegroundColor Green
 }
 
 Write-Host ""

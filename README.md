@@ -107,7 +107,7 @@ User query
 powershell -ExecutionPolicy Bypass -File setup.ps1
 ```
 
-The script: prompts for Tavily key → checks dependencies → installs MCPs → deploys strategy → shows status summary.
+The script: prompts for Tavily key → checks dependencies → installs MCPs → choose strategy language (Chinese/English) → deploys strategy → shows status summary.
 
 ### Manual Install
 
@@ -132,6 +132,8 @@ claude mcp list
 ```
 
 ### Deploy Strategy File
+
+Copy the strategy file to your Claude Code config directory (use `strategy_en.md` for English):
 
 ```bash
 # Windows
