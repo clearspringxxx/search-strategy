@@ -1,0 +1,18 @@
+{
+  "name": "ccproxy",
+  "version": "4.0.0",
+  "description": "Last-resort command-level proxy wrapper (Clash Verge / FlClash) for foreign-resource commands",
+  "type": "module",
+  "bin": {
+    "ccproxy": "ccproxy.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/clearspringxxx/ccproxy.git"
+  },
+  "keywords": ["proxy", "clash", "command-line"],
+  "license": "MIT"
+}

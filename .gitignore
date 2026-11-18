@@ -1,0 +1,10 @@
+# IDE
+.idea/
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS / dependencies / logs
+.DS_Store
+node_modules/
+*.log
